@@ -31,7 +31,11 @@ class IIV(IndicatorUtils):
         
         dataframe[signal[0]] = dataframe['volume'] / previous_mean
 
-        dataframe['is_hot']  = dataframe[signal[0]] >= hot_thresh
+        dataframe['is_hot']  = False
         dataframe['is_cold'] = False
+
+        _open, _close = dataframe.iloc[-1]['open'] , dataframe.iloc[-1]['close']
+
+        dataframe.iloc[-1]['is_hot']  = dataframe.iloc[-1][signal[0]] >= hot_thresh and _close > _open
 
         return dataframe
