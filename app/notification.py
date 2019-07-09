@@ -258,15 +258,22 @@ class Notifier(IndicatorUtils):
         market_pair = market_pair.replace('/', '_').lower()
         chart_file = '{}/{}_{}_{}.png'.format('./charts', exchange, market_pair, candle_period)
 
-        if os.path.exists(chart_file):
-            try:
-                self.telegram_client.send_chart(open(chart_file, 'rb'))
-                self.notify_telegram_message(messages, message_template)
-            except (IOError, SyntaxError) :
-                self.notify_telegram_message(messages, message_template)
-        else:
-            self.logger.info('Chart file %s doesnt exist, sending text message.', chart_file)
-            self.notify_telegram_message(messages, message_template)
+        try:
+            index = 0 
+            for message in messages:
+                formatted_message = message_template.render(message)
+                if os.path.exists(chart_file) and index == 0:
+                    try:
+                        self.telegram_client.send_all(open(chart_file, 'rb'), formatted_message.strip())
+                    except (IOError, SyntaxError) :
+                        self.logger.info('Chart file %s doesnt exist, sending text message.', chart_file)
+                        self.telegram_client.notify(formatted_message.strip())
+                else:
+                    self.telegram_client.notify(formatted_message.strip())
+                index += 1
+        except (TelegramTimedOut) as e:
+            self.logger.info('Error TimeOut!')
+            self.logger.info(e)
 
     def notify_telegram_message(self, messages, message_template):
         try:
