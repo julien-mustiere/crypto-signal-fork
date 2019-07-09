@@ -46,7 +46,34 @@ class TelegramNotifier(NotifierUtils):
         #print(message_chunks)
         #exit()
         for message_chunk in message_chunks:
-            self.bot.send_message(chat_id=self.chat_id, text=message_chunk, parse_mode=self.parse_mode)
+           self.bot.send_message(chat_id=self.chat_id, text=message_chunk, parse_mode=self.parse_mode, disable_web_page_preview=True)
+
+
+    @retry(
+        retry=retry_if_exception_type(telegram.error.TimedOut),
+        stop=stop_after_attempt(3),
+        wait=wait_fixed(5)
+    )
+    def send_all(self, photo_url, message):
+        """Send the notification.
+
+        Args:
+            photo_url (str): The photo url to send.
+            message (str): The message to send.
+        """
+
+        max_message_size = 4096
+        message_chunks = self.chunk_message(message=message, max_message_size=max_message_size)
+        #print(message_chunks)
+        #exit()
+        index = 0
+        for message_chunk in message_chunks:
+            if index == 0:
+                self.bot.send_photo(chat_id=self.chat_id, photo=photo_url, timeout=40, caption=message_chunk, parse_mode=self.parse_mode)
+            else:
+                self.bot.send_message(chat_id=self.chat_id, text=message_chunk, parse_mode=self.parse_mode, disable_web_page_preview=True)
+            index += 1
+
 
     @retry(
         retry=retry_if_exception_type(telegram.error.TimedOut),
